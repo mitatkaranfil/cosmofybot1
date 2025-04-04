@@ -15,25 +15,26 @@ const userRoutes = require('./routes/users');
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com',
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || origin === 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Length', 'Authorization'],
   credentials: true,
-  maxAge: 86400
-}));
+  maxAge: 86400,
+  optionsSuccessStatus: 204
+};
 
-// CORS pre-flight OPTIONS işlemlerini ele almak için özel ara katman
-app.options('*', (req, res) => {
-  console.log('OPTIONS request received in server.js');
-  res.header('Access-Control-Allow-Origin', 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-  res.sendStatus(200);
-});
+app.use(cors(corsOptions));
+
+// CORS pre-flight OPTIONS handler
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(morgan('dev'));
