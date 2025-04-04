@@ -16,20 +16,21 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: '*',
+  origin: 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: '*',
+  allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Length', 'Authorization'],
-  credentials: false,
+  credentials: true,
   maxAge: 86400
 }));
 
 // CORS pre-flight OPTIONS işlemlerini ele almak için özel ara katman
 app.options('*', (req, res) => {
   console.log('OPTIONS request received in server.js');
-  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400');
   res.sendStatus(200);
 });
