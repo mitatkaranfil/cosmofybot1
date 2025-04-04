@@ -19,8 +19,21 @@ app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: '*',
-  credentials: false
+  exposedHeaders: ['Content-Length', 'Authorization'],
+  credentials: false,
+  maxAge: 86400
 }));
+
+// CORS pre-flight OPTIONS işlemlerini ele almak için özel ara katman
+app.options('*', (req, res) => {
+  console.log('OPTIONS request received in server.js');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(200);
+});
+
 app.use(express.json());
 app.use(morgan('dev'));
 

@@ -20,21 +20,35 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet({ 
-  crossOriginResourcePolicy: false
-}));
-
-// Simple CORS handling
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: '*',
-  credentials: false
+  exposedHeaders: ['Content-Length', 'Authorization'],
+  credentials: false,
+  maxAge: 86400
 }));
 
 // Log CORS setup
 console.log('Using simple CORS configuration with wildcard origin');
 
+// CORS pre-flight OPTIONS işlemlerini ele almak için özel ara katman
+app.options('*', (req, res) => {
+  console.log('OPTIONS request received');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(200);
+});
+
+// Helmet sonra gelmeli
+app.use(helmet({ 
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false
+}));
+
+// Son olarak diğer middleware'ler
 app.use(express.json()); // JSON body parser
 app.use(morgan('dev')); // Logging
 
