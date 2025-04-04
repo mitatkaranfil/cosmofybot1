@@ -12,7 +12,7 @@ const router = express.Router();
  */
 router.post('/login', async (req, res) => {
   try {
-    console.log('Auth request received:', JSON.stringify(req.body, null, 2));
+    console.log('[AUTH] Auth request received:', JSON.stringify(req.body, null, 2));
     
     const { initData, user } = req.body;
     
@@ -26,7 +26,7 @@ router.post('/login', async (req, res) => {
       photo_url: user?.photo_url || null
     };
     
-    console.log('Using Telegram user data:', telegramUserData);
+    console.log('[AUTH] Using Telegram user data:', telegramUserData);
     
     // Kullanıcı verisini database için normalize et
     const telegramUser = {
@@ -38,109 +38,133 @@ router.post('/login', async (req, res) => {
       language_code: telegramUserData.language_code
     };
     
-    console.log('Normalized user data for database:', telegramUser);
+    console.log('[AUTH] Normalized user data for database:', telegramUser);
+    
+    // Veritabanı işlemleri ve kimlik doğrulama
+    let userData, token, formattedUser;
     
     try {
       // Check if user exists in database
-      console.log('Checking if user exists with telegram_id:', telegramUser.telegram_id);
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('telegram_id', telegramUser.telegram_id)
-        .single();
-        
-      if (fetchError) {
-        if (fetchError.code === 'PGRST116') {
-          console.log('User not found, will create new user');
+      console.log('[AUTH] Checking if user exists with telegram_id:', telegramUser.telegram_id);
+      
+      // Bu işlemde error olsa bile devam et, yeni kullanıcı oluştur
+      let existingUser = null;
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('telegram_id', telegramUser.telegram_id)
+          .single();
+          
+        if (!error) {
+          existingUser = data;
+          console.log('[AUTH] Existing user found:', existingUser?.id);
+        } else if (error.code === 'PGRST116') {
+          console.log('[AUTH] User not found, will create new user');
         } else {
-          console.error('Database error when fetching user:', fetchError);
-          throw new Error('Database error: ' + fetchError.message);
+          console.error('[AUTH] Error querying user:', error);
+          // Hata olsa da devam et
         }
-      } else {
-        console.log('Existing user found:', existingUser);
+      } catch (queryError) {
+        console.error('[AUTH] Unexpected error querying user:', queryError);
+        // Hata olsa da devam et
       }
       
-      let userData;
-      
-      // If user doesn't exist, create a new user
+      // Kullanıcı yoksa oluştur
       if (!existingUser) {
-        console.log('Creating new user with data:', telegramUser);
-        const { data: newUser, error: createError } = await supabase
-          .from('users')
-          .insert([telegramUser])
-          .select()
-          .single();
+        console.log('[AUTH] Creating new user with data:', telegramUser);
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .insert([telegramUser])
+            .select();
+            
+          if (error) {
+            console.error('[AUTH] Error creating user:', error);
+            throw new Error('Failed to create user');
+          }
           
-        if (createError) {
-          console.error('Error creating user:', createError);
-          throw new Error('Unable to create user: ' + createError.message);
+          if (data && data.length > 0) {
+            userData = data[0];
+            console.log('[AUTH] New user created:', userData?.id);
+          } else {
+            console.error('[AUTH] No user data returned after creation');
+            throw new Error('No user data returned');
+          }
+        } catch (createError) {
+          console.error('[AUTH] Create user operation failed:', createError);
+          throw new Error('User creation failed');
         }
-        
-        console.log('New user created:', newUser);
-        userData = newUser;
       } else {
-        // Update existing user's data 
-        console.log('Updating existing user:', existingUser.id);
-        const { data: updatedUser, error: updateError } = await supabase
-          .from('users')
-          .update({
-            username: telegramUser.username,
-            first_name: telegramUser.first_name,
-            last_name: telegramUser.last_name,
-            photo_url: telegramUser.photo_url,
-            language_code: telegramUser.language_code,
-            updated_at: new Date()
-          })
-          .eq('telegram_id', telegramUser.telegram_id)
-          .select()
-          .single();
-          
-        if (updateError) {
-          console.error('Error updating user:', updateError);
-          throw new Error('Unable to update user: ' + updateError.message);
-        }
+        // Kullanıcı varsa güncelle
+        userData = existingUser;
+        console.log('[AUTH] Using existing user:', userData?.id);
         
-        console.log('User updated:', updatedUser);
-        userData = updatedUser;
+        // Sadece güncelleme gerekiyorsa güncelle, yoksa atla
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .update({
+              first_name: telegramUser.first_name,
+              last_name: telegramUser.last_name,
+              username: telegramUser.username,
+              updated_at: new Date()
+            })
+            .eq('telegram_id', telegramUser.telegram_id)
+            .select();
+            
+          if (!error && data && data.length > 0) {
+            userData = data[0];
+            console.log('[AUTH] User updated:', userData?.id);
+          }
+        } catch (updateError) {
+          console.error('[AUTH] Update error (non-critical):', updateError);
+          // Güncelleme hatası kritik değil, mevcut kullanıcı verileriyle devam et
+        }
+      }
+      
+      if (!userData || !userData.id) {
+        throw new Error('No valid user data to generate token');
       }
       
       // Generate JWT token
-      console.log('Generating token for user:', userData.id);
-      const token = generateToken(userData);
+      console.log('[AUTH] Generating token for user:', userData.id);
+      token = generateToken(userData);
       
-      // Format user data for response
-      const formattedUser = {
+      // Format user data for response with defaults
+      formattedUser = {
         id: userData.id,
         telegramId: userData.telegram_id,
         username: userData.username || 'telegram_user',
-        firstName: userData.first_name,
-        lastName: userData.last_name || '',
-        photoUrl: userData.photo_url,
+        firstName: userData.first_name || 'Telegram',
+        lastName: userData.last_name || 'User',
+        photoUrl: userData.photo_url || null,
         miningLevel: userData.mining_level || 1,
         walletBalance: userData.wallet_balance || 0
       };
       
-      console.log('Sending user data to frontend:', formattedUser);
-
-      return res.status(200).json({
-        success: true,
-        message: 'Authentication successful',
-        token,
-        user: formattedUser
-      });
+      console.log('[AUTH] Successfully authenticated user:', formattedUser.id);
     } catch (dbError) {
-      console.error('Database operation error:', dbError);
+      console.error('[AUTH] Database error:', dbError);
       return res.status(500).json({ 
         success: false, 
-        message: 'Database error: ' + dbError.message
+        message: 'Database operation failed: ' + (dbError.message || 'Unknown error') 
       });
     }
-  } catch (error) {
-    console.error('Authentication error:', error);
     
+    // Başarılı yanıt gönder
+    console.log('[AUTH] Sending formatted user data to frontend');
+    return res.status(200).json({
+      success: true,
+      message: 'Authentication successful',
+      token,
+      user: formattedUser
+    });
+  } catch (error) {
+    console.error('[AUTH] Fatal authentication error:', error);
     return res.status(500).json({ 
       success: false, 
-      message: 'Authentication error: ' + error.message
+      message: 'Authentication failed: ' + (error.message || 'Unknown error')
     });
   }
 });

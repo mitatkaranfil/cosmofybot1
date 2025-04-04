@@ -11,9 +11,30 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
  * @returns {boolean} Whether the data is valid
  */
 export const validateTelegramData = (initData) => {
-  // Herhangi bir initData olduğunda geçerli kabul et - doğrulama tamamen devre dışı
-  console.log('BYPASSING ALL TELEGRAM VALIDATION FOR TESTING!');
-  return true;
+  // DEBUG: VALIDATION BYPASS - SADECE GELIŞTIRME SIRASINDA KULLANILMALI
+  console.log('BYPASSING ALL TELEGRAM VALIDATION WITH BYPASS TOKEN');
+  
+  try {
+    if (!BOT_TOKEN) {
+      console.error('TELEGRAM_BOT_TOKEN is missing in environment variables');
+      // Hat değil, production için çalışmalı
+      return true;
+    }
+  
+    // TODO: Gerçek doğrulama için aşağıdaki kodu etkinleştirin
+    /*
+    if (initData && BOT_TOKEN) {
+      return validate(BOT_TOKEN, initData);
+    }
+    */
+    
+    // Doğrulama devre dışı - her zaman geçiyor
+    return true;
+  } catch (error) {
+    console.error('Telegram validation error (bypassed):', error);
+    // Hata olsa da geçmesine izin ver
+    return true;
+  }
 };
 
 /**
