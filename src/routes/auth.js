@@ -124,14 +124,16 @@ router.post('/login', async (req, res) => {
     const formattedUser = {
       id: userData.id,
       telegramId: userData.telegram_id,
-      username: userData.username,
-      firstName: userData.first_name,
-      lastName: userData.last_name,
+      username: userData.username || 'telegram_user',
+      firstName: userData.first_name || 'Telegram',
+      lastName: userData.last_name || 'User',
       photoUrl: userData.photo_url,
-      miningLevel: userData.mining_level,
-      walletBalance: userData.wallet_balance
+      miningLevel: userData.mining_level || 1,
+      walletBalance: userData.wallet_balance || 0
     };
     
+    console.log('Sending user data to frontend:', formattedUser);
+
     return res.status(200).json({
       success: true,
       message: 'Authentication successful',
