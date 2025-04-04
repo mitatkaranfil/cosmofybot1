@@ -14,29 +14,37 @@ const userRoutes = require('./routes/users');
 // Create Express app
 const app = express();
 
-// Middleware
+// CORS configuration
 const corsOptions = {
   origin: 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-XSRF-TOKEN'],
   exposedHeaders: ['Content-Length', 'Authorization'],
   credentials: true,
   maxAge: 86400,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
+  preflightContinue: false
 };
 
 // CORS middleware
 app.use((req, res, next) => {
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', corsOptions.origin);
+    res.header('Access-Control-Allow-Methods', corsOptions.methods.join(', '));
+    res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(', '));
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', corsOptions.maxAge);
+    res.sendStatus(corsOptions.optionsSuccessStatus);
+    return;
+  }
+
+  // Handle other requests
   res.header('Access-Control-Allow-Origin', corsOptions.origin);
   res.header('Access-Control-Allow-Methods', corsOptions.methods.join(', '));
   res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(', '));
   res.header('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(204);
-  } else {
-    next();
-  }
+  next();
 });
 
 // Express CORS middleware
