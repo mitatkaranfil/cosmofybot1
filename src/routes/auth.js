@@ -1,6 +1,7 @@
 import express from 'express';
 import supabase from '../config/supabase.js';
 import { generateToken } from '../utils/jwt.js';
+import { validateTelegramData, extractTelegramUser } from '../utils/telegram.js';
 
 const router = express.Router();
 
@@ -27,15 +28,29 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    // TODO: Validate Telegram initData (hash verification)
-    // For now, we'll skip this step for simplicity
-    // In production, we should verify that the initData is valid and signed by Telegram
+    // Validate Telegram initData
+    const isValid = validateTelegramData(initData);
+    if (!isValid) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid Telegram data' 
+      });
+    }
+    
+    // Extract Telegram user data
+    const telegramUser = extractTelegramUser({ user });
+    if (!telegramUser) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Could not process Telegram user data' 
+      });
+    }
     
     // Check if user exists in database
     const { data: existingUser, error: fetchError } = await supabase
       .from('users')
       .select('*')
-      .eq('telegram_id', user.id.toString())
+      .eq('telegram_id', telegramUser.telegram_id)
       .single();
       
     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -53,14 +68,7 @@ router.post('/login', async (req, res) => {
     if (!existingUser) {
       const { data: newUser, error: createError } = await supabase
         .from('users')
-        .insert([{
-          telegram_id: user.id.toString(),
-          username: user.username || null,
-          first_name: user.first_name || 'User',
-          last_name: user.last_name || null,
-          photo_url: user.photo_url || null,
-          language_code: user.language_code || 'en'
-        }])
+        .insert([telegramUser])
         .select()
         .single();
         
@@ -79,14 +87,14 @@ router.post('/login', async (req, res) => {
       const { data: updatedUser, error: updateError } = await supabase
         .from('users')
         .update({
-          username: user.username || existingUser.username,
-          first_name: user.first_name || existingUser.first_name,
-          last_name: user.last_name || existingUser.last_name,
-          photo_url: user.photo_url || existingUser.photo_url,
-          language_code: user.language_code || existingUser.language_code,
+          username: telegramUser.username || existingUser.username,
+          first_name: telegramUser.first_name || existingUser.first_name,
+          last_name: telegramUser.last_name || existingUser.last_name,
+          photo_url: telegramUser.photo_url || existingUser.photo_url,
+          language_code: telegramUser.language_code || existingUser.language_code,
           updated_at: new Date()
         })
-        .eq('telegram_id', user.id.toString())
+        .eq('telegram_id', telegramUser.telegram_id)
         .select()
         .single();
         
