@@ -1,4 +1,4 @@
-import { validate } from 'telegram-web-app';
+import telegramWebApp from 'telegram-web-app';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -20,20 +20,14 @@ export const validateTelegramData = (initData) => {
       // Hat değil, production için çalışmalı
       return true;
     }
-  
-    // TODO: Gerçek doğrulama için aşağıdaki kodu etkinleştirin
-    /*
-    if (initData && BOT_TOKEN) {
-      return validate(BOT_TOKEN, initData);
-    }
-    */
-    
-    // Doğrulama devre dışı - her zaman geçiyor
-    return true;
+
+    // Use the default export's validate method
+    const isValid = telegramWebApp.validate(BOT_TOKEN, initData);
+    console.log('Telegram data validation result:', isValid);
+    return isValid;
   } catch (error) {
-    console.error('Telegram validation error (bypassed):', error);
-    // Hata olsa da geçmesine izin ver
-    return true;
+    console.error('Error validating Telegram data:', error);
+    return false;
   }
 };
 
