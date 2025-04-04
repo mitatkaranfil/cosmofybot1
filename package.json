@@ -19,13 +19,13 @@
     "morgan": "^1.10.0",
     "telegraf": "^4.16.3",
     "telegram-typings": "^5.0.0",
-    "telegram-web-app": "^1.0.0"
+    "telegram-web-app": "^0.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
   "engines": {
-    "node": ">=18.0.0 <20.0.0"
+    "node": "18.x"
   },
   "type": "module"
 }
