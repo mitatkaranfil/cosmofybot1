@@ -21,7 +21,22 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(helmet()); // Security headers
-app.use(cors()); // CORS for all routes
+
+// Custom CORS configuration
+const corsOptions = {
+  origin: process.env.ALLOW_ORIGIN || 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+// Log CORS configuration
+console.log('CORS configuration:', {
+  origin: corsOptions.origin,
+  methods: corsOptions.methods
+});
+
+app.use(cors(corsOptions)); // Apply custom CORS options
 app.use(express.json()); // JSON body parser
 app.use(morgan('dev')); // Logging
 
