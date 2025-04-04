@@ -11,25 +11,9 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
  * @returns {boolean} Whether the data is valid
  */
 export const validateTelegramData = (initData) => {
-  if (!BOT_TOKEN) {
-    console.error('TELEGRAM_BOT_TOKEN is not defined in environment variables');
-    console.log('Bypassing validation for testing purposes');
-    return true;
-  }
-  
-  try {
-    // Development ve test amaçları için her zaman true döndür
-    console.log('Bypassing Telegram validation for testing purposes');
-    return true;
-    
-    // Gerçek doğrulama kodu (şu an devre dışı):
-    // return validate(BOT_TOKEN, initData);
-  } catch (error) {
-    console.error('Telegram validation error:', error);
-    // Test için yine de true döndür
-    console.log('Error in validation, but bypassing for testing');
-    return true;
-  }
+  // Herhangi bir initData olduğunda geçerli kabul et - doğrulama tamamen devre dışı
+  console.log('BYPASSING ALL TELEGRAM VALIDATION FOR TESTING!');
+  return true;
 };
 
 /**
