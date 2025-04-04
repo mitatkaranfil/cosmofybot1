@@ -22,29 +22,18 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(helmet({ 
   crossOriginResourcePolicy: false
-})); // Disable cross-origin resource policy
+}));
 
-// CORS handling - most permissive approach
-app.use((req, res, next) => {
-  // Allow from any origin
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    console.log('Responding to OPTIONS preflight request');
-    return res.status(204).send();
-  }
-  
-  next();
-});
+// Simple CORS handling
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: '*',
+  credentials: false
+}));
 
-// Disable cors middleware since we're handling it manually
-// app.use(cors(...));
-
-console.log('CORS headers explicitly configured with wildcard origin (*)');
+// Log CORS setup
+console.log('Using simple CORS configuration with wildcard origin');
 
 app.use(express.json()); // JSON body parser
 app.use(morgan('dev')); // Logging
