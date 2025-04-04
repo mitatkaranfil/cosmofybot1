@@ -20,23 +20,35 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet()); // Security headers
+app.use(helmet({ 
+  crossOriginResourcePolicy: { policy: "cross-origin" } 
+})); // Security headers with cross-origin allowed
 
-// Custom CORS configuration
-const corsOptions = {
-  origin: process.env.ALLOW_ORIGIN || 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-};
-
-// Log CORS configuration
-console.log('CORS configuration:', {
-  origin: corsOptions.origin,
-  methods: corsOptions.methods
+// Allow all CORS - more permissive approach
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
 });
 
-app.use(cors(corsOptions)); // Apply custom CORS options
+// Standard CORS as backup
+app.use(cors({
+  origin: 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+  credentials: true
+}));
+
+console.log('CORS headers explicitly configured for:', 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com');
+
 app.use(express.json()); // JSON body parser
 app.use(morgan('dev')); // Logging
 
