@@ -16,25 +16,31 @@ const app = express();
 
 // Middleware
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || origin === 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com') {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: 'https://cosmofy-frontend-00d9ca88cc7d.herokuapp.com',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   exposedHeaders: ['Content-Length', 'Authorization'],
   credentials: true,
   maxAge: 86400,
   optionsSuccessStatus: 204
 };
 
-app.use(cors(corsOptions));
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', corsOptions.origin);
+  res.header('Access-Control-Allow-Methods', corsOptions.methods.join(', '));
+  res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(', '));
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+  } else {
+    next();
+  }
+});
 
-// CORS pre-flight OPTIONS handler
-app.options('*', cors(corsOptions));
+// Express CORS middleware
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(morgan('dev'));
